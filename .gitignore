@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+example/*qa.js
+sample/*qa.js
+
+# Ignore .env files in all directories
+**/.env
+
+# Ignore all files and folders starting with 'test' in all directories
+**/test*
