@@ -32,8 +32,8 @@ const binance = new Ninjaxt.Binance({
 
 async function main(){
     try{
-        const binance = await binance.recentTrades('BTC/USDT', 10);
-        console.log(binance);
+        const recentTrades = await binance.recentTrades('BTC/USDT', 10);
+        console.log(recentTrades);
     }catch(error){
         console.log(error);
     }
