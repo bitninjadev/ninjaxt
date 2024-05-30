@@ -20,38 +20,23 @@ const define = (obj, props) => {
     return null;
 };
 
-const numberToString = x => {
-    if (x === null) return null;
-    if (x === undefined) return undefined;
-    if (typeof x === 'object' && !x.length) return JSON.stringify(x);
-
-    if (typeof x !== 'number') return x && x.toString ? x.toString() : null;
-
-    const s = x.toString();
-    if (Math.abs(x) < 1.0) {
-        const n_e = s.split('e-');
-        const n = n_e[0].replace('.', '');
-        const e = parseInt(n_e[1]);
-        const neg = s[0] === '-';
-        if (e) {
-            x = (neg ? '-' : '') + '0.' + new Array(e).join('0') + n.substring(neg ? 1 : 0);
-            return x;
-        }
+const convertSciToNormal = (num) => {
+    const str = num.toString()
+    const match = str.match(/^(\d+)(\.(\d+))?[eE]([-\+]?\d+)$/)
+    if (!match) return str //number was not e notation or toString converted
+    // we parse the e notation as (integer).(tail)e(exponent)
+    const [, integer,, tail, exponentStr ] = match
+    const exponent = Number(exponentStr)
+    const realInteger = integer + (tail || '')
+    if(exponent > 0) {
+        const realExponent = Math.abs(exponent + integer.length)
+        return realInteger.padEnd(realExponent, '0')
     } else {
-        const parts = s.split('e');
-        if (parts.length > 1) {
-            let e = parseInt(parts[1]);
-            const m = parts[0].split('.');
-            let part = '';
-            if (m.length > 1) {
-                e -= m[1].length;
-                part = m[1];
-            }
-            return m[0] + part + new Array(e + 1).join('0');
-        }
+        const realExponent = Math.abs(exponent - (tail?.length || 0))
+        return '0.'+ realInteger.padStart(realExponent, '0')
     }
-    return s;
-};
+
+}
 
 const isEmpty = (value) => {
     if (isArray(value) || typeof value === 'string') {
@@ -190,7 +175,7 @@ export {
     hasProp,
     isValid,
     define,
-    numberToString,
+    convertSciToNormal,
     safeFloat,
     safeInteger,
     safeValue,

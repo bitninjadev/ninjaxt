@@ -86,9 +86,9 @@ export class Bitmusa extends BaseExchange {
             },
             urls: {
                 base: {
-                    V0: 'https://openapi.bitmusa.com/',
-                    // ssV0: '',
-                    // sfV0: '',
+                    V0: 'https://openapi.bitmusa.com',
+                    ssV0: '',
+                    sfV0: '',
                 },
                 sandbox: {},
             },
@@ -103,6 +103,7 @@ export class Bitmusa extends BaseExchange {
                 },
                 private: {
                     get: {
+                        'api/v1/spot/market/exchange-info' : {versions: ['V0'], cost: null},
                         'api/v1/spot/wallet': { versions: ['V0'], cost: null },
                         'api/v1/spot/market': { versions: ['V0'], cost: null },
                         'api/v1/spot/market/orderbook': { versions: ['V0'], cost: null },
@@ -113,6 +114,7 @@ export class Bitmusa extends BaseExchange {
                         'api/v1/spot/market/kline': { versions: ['V0'], cost: null },
                         'api/v1/spot/order': { versions: ['V0'], cost: null },
                         // futures
+                        'api/v2/future/market/exchange-info': { versions: ['V0'], cost: null },
                         'api/v2/future/market': { versions: ['V0'], cost: null },
                         'api/v2/future/market/trade': { versions: ['V0'], cost: null },
                         'api/v2/future/wallet': { versions: ['V0'], cost: null },
@@ -257,88 +259,107 @@ export class Bitmusa extends BaseExchange {
 
         return response.data;
     }
-    parseInstruments(exchangeInfo) {
-        throw new Unavailable('parseInstruments');
+    parseMarkets(exchangeInfo) {
+        // SPOT
+        // [
+        //     {
+        //         "symbol": "BTC/USDT",
+        //         "baseCoin": "BTC",
+        //         "quoteCoin": "USDT",
+        //         "fee": "0.0015",
+        //         "baseCoinScale": 2,
+        //         "quoteCoinPrecision": 5,
+        //         "maxBuyOrderPrice": "0.0",
+        //         "minSellOrderPrice": "0.0",
+        //         "maxOpenOrder": 200,
+        //         "maxBaseCoinQty": "0.0",
+        //         "minBaseCoinQty": "1.0E-5",
+        //         "minQuoteCoinQty": "10.0",
+        //         "enableMarketSell": true,
+        //         "enableMarketBuy": true,
+        //         "enableSell": true,
+        //         "enableBuy": true,
+        //         "enable": true
+        //     },
+        // ]
+        // FUTURES
+        // [
+        //     {
+        //         "ticker": "BTCUSDT",
+        //         "baseCoin": "BTC",
+        //         "quoteCoin": "USDT",
+        //         "takerFee": "0.03",
+        //         "makerFee": "0.02",
+        //         "baseCoinPrecision": 1,
+        //         "quoteCoinPrecision": 3,
+        //         "minOrderPrice": "0.1",
+        //         "maxOrderPrice": "1000000.0",
+        //         "maxOpenOrder": 5000,
+        //         "maxBaseCoinQty": "2000000.0",
+        //         "minBaseCoinQty": "10.0",
+        //         "maxQuoteCoinQty": "1000.0",
+        //         "minQuoteCoinQty": "0.001",
+        //         "enableLimitBuy": true,
+        //         "enableLimitSell": true,
+        //         "enableMarketSell": true,
+        //         "enableMarketBuy": true,
+        //         "enable": true
+        //     },
+        // ]
+        for(let i = 0; i < exchangeInfo.length; i++){
+            const item = exchangeInfo[i];
+            const id = this.define(item, ['symbol', 'ticker']);
+            const baseAsset = this.safeStringUpper(item, 'baseCoin');
+            const quoteAsset = this.safeStringUpper(item, 'quoteCoin');
+            const socketId = baseAsset + quoteAsset;
+            const assetType = this.hasProp(item, ['fee']) ? 'spot': 'futures';
+            const pricePrecision = String(this.define(item, ['baseCoinScale', 'baseCoinPrecision']));
+            const amountPrecision = this.safeString(item, 'quoteCoinPrecision');
+            let minBaseLotSize = this.convertSciToNormal(this.safeString(item, 'minBaseCoinQty'));
+            let maxBaseLotSize = this.convertSciToNormal(this.safeString(item, 'maxBaseCoinQty'));
+            if(!Precise.stringGt(maxBaseLotSize, '0')){
+                maxBaseLotSize = null;
+            }
+            let minQuoteLotSize = this.convertSciToNormal(this.safeString(item, 'minQuoteCoinQty'));
+            let maxQuoteLotSize = this.safeString(item, 'maxQuoteCoinQty', null);
+            const input = `${baseAsset}/${quoteAsset}`;
+            if(!this.markets[assetType]){
+                this.markets[assetType] = {};
+            }
+            if(!this.markets['parsed']) {
+                this.markets['parsed'] = {};
+            }
+            if (!this.markets['parsed'][assetType]) {
+                this.markets['parsed'][assetType] = {};
+            }
+            const obj = {
+                id: id,
+                symbol: input,
+                socketId: socketId,
+                base: baseAsset,
+                quote: quoteAsset,
+                pricePrecision: pricePrecision,
+                amountPrecision: amountPrecision,
+                minBaseLotSize: minBaseLotSize,
+                maxBaseLotSize: maxBaseLotSize,
+                minQuoteLotSize: minQuoteLotSize,
+                maxQuoteLotSize: maxQuoteLotSize,
+            }
+            this.markets[assetType][input] = obj;
+            this.markets['parsed'][assetType][id] = obj;
+        }
     }
-    async loadInstruments() {
+    async loadMarkets() {
         if (Object.keys(this.instruments).length > 0) return; // already loaded
-        // harded coded instruments for now as the API does not provide a list of instruments
-        this.instruments = {
-            spot: {
-                'BTC/USDT': 'BTC/USDT',
-                'ETH/USDT': 'ETH/USDT',
-                'XRP/USDT': 'XRP/USDT',
-                'BNB/USDT': 'BNB/USDT',
-                'TRX/USDT': 'TRX/USDT',
-                'EOS/USDT': 'EOS/USDT',
-                'MUSA/USDT': 'MUSA/USDT',
-                'BAKE/USDT': 'BAKE/USDT',
-                'CAKE/USDT': 'CAKE/USDT',
-                'SHIB/USDT': 'SHIB/USDT',
-                'XVS/USDT': 'XVS/USDT',
-                'ALPACA/USDT': 'ALPACA/USDT',
-                'MBOX/USDT': 'MBOX/USDT',
-                'MATIC/USDT': 'MATIC/USDT',
-                'JST/USDT': 'JST/USDT',
-                'IQ/USDT': 'IQ/USDT',
-                'CHESS/USDT': 'CHESS/USDT',
-                'BTT/USDT': 'BTT/USDT',
-                'BIFI/USDT': 'BIFI/USDT',
-                'AUTO/USDT': 'AUTO/USDT',
-            },
-            spotReversed: {
-                'BTC/USDT': 'BTC/USDT',
-                'ETH/USDT': 'ETH/USDT',
-                'XRP/USDT': 'XRP/USDT',
-                'BNB/USDT': 'BNB/USDT',
-                'TRX/USDT': 'TRX/USDT',
-                'EOS/USDT': 'EOS/USDT',
-                'MUSA/USDT': 'MUSA/USDT',
-                'BAKE/USDT': 'BAKE/USDT',
-                'CAKE/USDT': 'CAKE/USDT',
-                'SHIB/USDT': 'SHIB/USDT',
-                'XVS/USDT': 'XVS/USDT',
-                'ALPACA/USDT': 'ALPACA/USDT',
-                'MBOX/USDT': 'MBOX/USDT',
-                'MATIC/USDT': 'MATIC/USDT',
-                'JST/USDT': 'JST/USDT',
-                'IQ/USDT': 'IQ/USDT',
-                'CHESS/USDT': 'CHESS/USDT',
-                'BTT/USDT': 'BTT/USDT',
-                'BIFI/USDT': 'BIFI/USDT',
-                'AUTO/USDT': 'AUTO/USDT',
-            },
-            futures: {
-                'BTC/USDT': 'BTCUSDT',
-                'ETH/USDT': 'ETHUSDT',
-                'BCH/USDT': 'BCHUSDT',
-                'SOL/USDT': 'SOLUSDT',
-                'LTC/USDT': 'LTCUSDT',
-                'AVAX/USDT': 'AVAXUSDT',
-                'ETC/USDT': 'ETCUSDT',
-                'LINK/USDT': 'LINKUSDT',
-                'OP/USDT': 'OPUSDT',
-                'ARB/USDT': 'ARBUSDT',
-                'ADA/USDT': 'ADAUSDT',
-                'DOGE/USDT': 'DOGEUSDT',
-                'XLM/USDT': 'XLMUSDT',
-                'MUSA/USDT': 'MUSAUSDT',
-            },
-            futuresReversed: {
-                'BTCUSDT': 'BTC/USDT',
-                'ETHUSDT': 'ETH/USDT',
-                'BCHUSDT': 'BCH/USDT',
-                'SOLUSDT': 'SOL/USDT',
-                'LTCUSDT': 'LTC/USDT',
-                'AVAXUSDT': 'AVAX/USDT',
-                'ETCUSDT': 'ETC/USDT',
-                'LINKUSDT': 'LINK/USDT',
-                'OPUSDT': 'OP/USDT',
-                'ARBUSDT': 'ARB/USDT',
-                'ADAUSDT': 'ADA/USDT',
-                'DOGEUSDT': 'DOGE/USDT',
-                'XLMUSDT': 'XLM/USDT',
-                'MUSAUSDT': 'MUSA/USDT',
+        const promisesAry = [];
+        promisesAry.push(this.getApiV1SpotMarketExchangeInfo());
+        promisesAry.push(this.getApiV2FutureMarketExchangeInfo());
+        const promises = await Promise.all(promisesAry);
+        for(let i = 0; i < promises.length; i++){
+            const response = promises[i];
+            const data = this.handleResponse(response);
+            if(data){
+                this.parseMarkets(data);
             }
         }
     }
@@ -1075,7 +1096,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseSystemStatus(data);
     }
     async recentTrades(symbol, limit) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarketTrade';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'spot', false);
@@ -1085,7 +1106,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTrade(data);
     }
     async balance(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotWallet';
         const response = await this[method]();
         const data = this.handleResponse(response);
@@ -1094,7 +1115,7 @@ export class Bitmusa extends BaseExchange {
         return balance || {};
     }
     async balances() {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotWallet';
         const response = await this[method]();
         const data = this.handleResponse(response);
@@ -1102,7 +1123,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseBalance(filteredBalances);
     }
     async orderBook(symbol, limit) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarketOrderbook';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'spot', false);
@@ -1112,7 +1133,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseOrderBook(data, symbol, limit);
     }
     async ticker(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarket';
         const parsedSymbol = this.safeSymbols(symbol, 'spot', false);
         const response = await this[method]();
@@ -1121,7 +1142,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTicker(data, { symbol: parsedSymbol });
     }
     async tickers(symbols) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarket';
         const parsedSymbols = this.safeSymbols(symbols, 'spot', true);
         const response = await this[method]();
@@ -1134,7 +1155,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTicker(data);
     }
     async price(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarket';
         const response = await this[method]();
         const allPrices = this.handleResponse(response);
@@ -1143,7 +1164,7 @@ export class Bitmusa extends BaseExchange {
         return this.parsePrice(price);
     }
     async prices(symbols) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarket';
         const response = await this[method]();
         const tickers = this.handleResponse(response);
@@ -1156,7 +1177,7 @@ export class Bitmusa extends BaseExchange {
         }
     }
     async candles(symbol, timeframe, limit, params = {}) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotMarketKline';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'spot', false);
@@ -1174,7 +1195,7 @@ export class Bitmusa extends BaseExchange {
     }
     async tradeHistory(symbol, limit, params = {}) {
         throw new Unavailable(this.exchange + ' ' + 'tradeHistory() not supported');
-        await this.loadInstruments();
+        await this.loadMarkets();
         this.method = 'getApiV1SpotTradeHistory';
         const parameters = {};
         this.extendWithObj(parameters, {
@@ -1189,7 +1210,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTradeHistory(data);
     }
     async openOrders(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV1SpotOrder';
         const parsedSymbol = this.safeSymbols(symbol, 'spot', false);
         const parameters = {};
@@ -1199,7 +1220,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseOpenOrders(data.content);
     }
     async cancelOrder(symbol, orderId){
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'postApiV1SpotOrderCancel';
         const parameters = {};
         this.extendWithObj(parameters, {
@@ -1210,7 +1231,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseCancelOrder(response);
     }
     async futuresRecentTrades(symbol, limit) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureMarketTrade';
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
         const parameters = {};
@@ -1220,7 +1241,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTrade(data);
     }
     async futuresBalance(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureWalletNoposition';
         const response = await this[method]();
         const data = this.handleResponse(response);
@@ -1229,7 +1250,7 @@ export class Bitmusa extends BaseExchange {
         return balance;
     }
     async futuresBalances() {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureWalletNoposition';
         const response = await this[method]();
         const data = this.handleResponse(response);
@@ -1237,7 +1258,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseBalance(balances);
     }
     async futuresExposure(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FuturePosition';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1247,14 +1268,14 @@ export class Bitmusa extends BaseExchange {
         return this.parseExposure(data);
     }
     async futuresExposures() {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FuturePosition';
         const response = await this[method]();
         const data = this.handleResponse(response);
         return this.parseExposure(data);
     }
     async futuresOrderBook(symbol, limit) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureMarketOrderbook';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1264,7 +1285,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseOrderBook(data, symbol, limit);
     }
     async futuresTicker(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureMarket';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1274,7 +1295,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTicker(data);
     }
     async futuresPrice(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureMarket';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1284,7 +1305,7 @@ export class Bitmusa extends BaseExchange {
         return this.parsePrice({ symbol: symbol, price: ticker.last_price });
     }
     async futuresCandles(symbol, timeframe, limit, params = {}) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureMarketKline';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1300,7 +1321,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseCandle(data);
     }
     async futuresTradeHistory(symbol, limit, params = {}) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureTradeHistory';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1315,7 +1336,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseTradeHistory(data.content);
     }
     async futuresOpenOrders(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'getApiV2FutureOrder';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1325,7 +1346,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseOpenOrders(data);
     }
     async futuresCancelOrder(symbol, orderId){
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'postApiV2FutureOrderCancel';
         const parameters = {};
         this.extendWithObj(parameters, {
@@ -1336,7 +1357,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseCancelOrder(response);
     }
     async setLeverage(symbol, leverage) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'postApiV2FutureLeverage';
         const parameters = {};
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
@@ -1347,7 +1368,7 @@ export class Bitmusa extends BaseExchange {
     }
     async setPositionMode(dualSidePosition) {
         throw new Error('Not implemented');
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'postApiV2FuturePositionMode';
         dualSidePosition = dualSidePosition.replace('-', '');
         dualSidePosition = dualSidePosition.toUpperCase();
@@ -1366,7 +1387,7 @@ export class Bitmusa extends BaseExchange {
         throw new Error('Not implemented');
     }
     async order(symbol, side, argQty, argPrice, params = {}) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'postApiV1SpotOrder';
         /**
          * @method
@@ -1434,7 +1455,7 @@ export class Bitmusa extends BaseExchange {
         return this.parseOrder(order);
     }
     async futuresOrder(symbol, side, argQty, argPrice, params = {}) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'postApiV2FutureOrder';
         /**
          * @method
@@ -1928,7 +1949,7 @@ export class Bitmusa extends BaseExchange {
         }
     }
     async candleStream(symbol, interval) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'candle';
         const parsedSymbol = this.safeSymbols(symbol, 'spot', false).replace('/', '');
         const parsedTimeframe = this.safeTimeframe(interval, 'spot');
@@ -1938,7 +1959,7 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
     async orderBookStream(symbol) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'orderBook';
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false).replace('/', '');
         const urls = this.urls['base']['ssV0'];
@@ -1947,7 +1968,7 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
     async futuresCandleStream(symbol, interval) {
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'futuresCandle';
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
         const parsedTimeframe = this.safeTimeframe(interval, 'futures');
@@ -1957,7 +1978,7 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
     async futuresOrderBookStream(symbol) { // TODO Parse
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'futuresOrderBook';
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
         const urls = this.urls['base']['sfV0'];
@@ -1966,7 +1987,7 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
     async balanceStream() {
-        await this.loadInstruments();
+        await this.loadMarkets();
         await this.loadWallets('spot');
         let method = 'balance';
         const urls = this.urls['base']['ssV0'];
@@ -1974,7 +1995,7 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
     async futuresBalanceStream(){
-        await this.loadInstruments();
+        await this.loadMarkets();
         await this.loadWallets('futures');
         let method = 'futuresBalance';
         const urls = this.urls['base']['sfV0'];
@@ -1982,21 +2003,21 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
     async orderUpdateStream(){
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'orderUpdate';
         const urls = this.urls['base']['ssV0'];
         const url = await this.authenticate(method, urls);
         return this.handleStream(url, method);
     }
     async futuresOrderUpdateStream(){
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'futuresOrderUpdate';
         const urls = this.urls['base']['sfV0'];
         const url = await this.authenticate(method, urls);
         return this.handleStream(url, method);
     }
     async futuresExposureStream(){
-        await this.loadInstruments();
+        await this.loadMarkets();
         let method = 'futuresExposure';
         const urls = this.urls['base']['sfV0'];
         const url = await this.authenticate(method, urls);

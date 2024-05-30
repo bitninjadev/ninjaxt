@@ -18,7 +18,7 @@ import {
     isObject,
     isArray,
     define,
-    numberToString,
+    convertSciToNormal,
     safeFloat,
     safeInteger,
     safeValue,
@@ -58,7 +58,7 @@ export class BaseExchange {
         this.deepExtend = deepExtend;
         this.extendWithKey = extendWithKey;
         this.extendWithObj = extendWithObj;
-        this.numberToString = numberToString;
+        this.convertSciToNormal = convertSciToNormal;
         this.upperCase = upperCase;
         this.lowerCase = lowerCase;
         this.sortBy = sortBy;
@@ -265,9 +265,9 @@ export class BaseExchange {
     }
     generateFunctionName(method, path) {
         const methodName = method.toLowerCase();
-        // Split path by '/', '?', and '_' and remove empty parts
+        // Split path by '/', '?', '-', and '_' and remove empty parts
         const pathParts = path
-            .split(/[\/\?_]/)
+            .split(/[\/\?_-]/)
             .filter(Boolean)
             .map(part => part.replace(/[{}]/g, '')); // Remove curly braces
         const functionName = pathParts.map((part, index) => (index === 0 ? part : this.capitalize(part))).join('');
@@ -409,12 +409,6 @@ export class BaseExchange {
         let markets = this.markets;
         delete markets['parsed'];
         return markets;
-    }
-    async getInstruments(assetType = undefined) {
-        // returns an array of trading symbols
-        if (!assetType) throw new EmptyParameters(this.exchange + ' ' + 'getInstruments() assetType must be specified');
-        await this.loadInstruments();
-        return Object.keys(this.instruments[assetType]);
     }
     async loadWallets(assetType = undefined) {
         // assetType = 'spot' or 'futures'
