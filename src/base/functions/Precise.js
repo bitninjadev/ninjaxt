@@ -408,4 +408,4 @@ class Precise {
     }
 }
 
-module.exports = Precise, { Precise }; 
+module.exports = { Precise }; 

@@ -8,4 +8,4 @@ const Ninjaxt = {
     Gateio,
 };
 
-module.exports = { default: Ninjaxt };
+module.exports = Ninjaxt;
