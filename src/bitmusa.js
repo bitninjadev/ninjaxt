@@ -85,7 +85,7 @@ class Bitmusa extends BaseExchange {
             },
             urls: {
                 base: {
-                    V0: 'https://openapi.bitmusa.com',
+                    V0: 'https://openapi.bitmusa.com/',
                     ssV0: '',
                     sfV0: '',
                 },
