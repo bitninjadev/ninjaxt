@@ -18,4 +18,4 @@ const timeframeConvert = {
     '1w': 1000 * 60 * 60 * 24 * 7,
     '1M': 1000 * 60 * 60 * 24 * 30,
 };
-export { timeframeConvert };
+module.exports = { timeframeConvert };

@@ -54,4 +54,4 @@ class OrderBook {
     }
 }
 
-export default OrderBook;
+module.exports = OrderBook;

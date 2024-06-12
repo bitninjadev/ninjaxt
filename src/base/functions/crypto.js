@@ -1,7 +1,7 @@
-import { hmac } from '@noble/hashes/hmac';
-import { sha256 } from '@noble/hashes/sha256';
-import { sha512 } from '@noble/hashes/sha512';
-import { utf8ToBytes, bytesToHex } from '@noble/hashes/utils';
+const { hmac } = require('@noble/hashes/hmac');
+const { sha256 } = require('@noble/hashes/sha256');
+const { sha512 } = require('@noble/hashes/sha512');
+const { utf8ToBytes, bytesToHex } = require('@noble/hashes/utils');
 
 function hmacSha256(key, message) {
     // Ensure key and message are Uint8Array
@@ -28,4 +28,4 @@ function sha512Hex(input) {
     return bytesToHex(sha512(bytes));
 }
 
-export { hmacSha256, hmacSha512, sha512Hex };
+module.exports = { hmacSha256, hmacSha512, sha512Hex };

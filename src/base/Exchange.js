@@ -1,5 +1,5 @@
-import axios from 'axios';
-import {
+const axios = require('axios');
+const {
     Unavailable,
     EmptyParameters,
     AuthenticationError,
@@ -11,8 +11,8 @@ import {
     DDoSProtection,
     ExchangeError,
     TooManyRequests,
-} from './errors.js';
-import {
+} = require('./errors.js');
+const {
     hasProp,
     isValid,
     isObject,
@@ -38,14 +38,14 @@ import {
     toMilliseconds,
     decimalPlaces,
     parseToInt,
-} from './functions/utils.js';
-import { BaseClient } from './ws/baseClient.js';
-import { Precise } from './functions/Precise.js';
-import { timeframeConvert } from './functions/constants.js';
-import { HttpProxyAgent } from 'http-proxy-agent';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+} = require('./functions/utils.js');
+const { BaseClient } = require('./ws/baseClient.js');
+const { Precise } = require('./functions/Precise.js');
+const { timeframeConvert } = require('./functions/constants.js');
+const { HttpProxyAgent } = require('http-proxy-agent');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 
-export class BaseExchange {
+class BaseExchange {
     constructor(userConfig = {}) {
         this.exchange = this.constructor.name;
         this.apiKey = undefined;
@@ -1656,3 +1656,5 @@ export class BaseExchange {
         throw new Unavailable(this.exchange + ' ' + 'futuresExecutionStream() not supported');
     }
 }
+
+module.exports = { BaseExchange };

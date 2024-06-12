@@ -407,5 +407,5 @@ class Precise {
         return new Precise(string1).le(new Precise(string2));
     }
 }
-export default Precise;
-export { Precise };
+
+module.exports = Precise, { Precise }; 

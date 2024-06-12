@@ -1,9 +1,8 @@
-import { BaseExchange } from './base/Exchange.js';
-import { Rejected } from './base/errors.js';
-import { Precise } from './base/functions/Precise.js';
-import { Unavailable, EmptyParameters, InvalidOrder, DataLost, ExchangeError } from './base/errors.js';
+const { BaseExchange } = require('./base/Exchange.js');
+const { Rejected, Unavailable, EmptyParameters, InvalidOrder, DataLost, ExchangeError } = require('./base/errors.js');
+const { Precise } = require('./base/functions/Precise.js');
 
-export class Bitmusa extends BaseExchange {
+class Bitmusa extends BaseExchange {
     has() {
         return this.deepExtend(super.has(), {
             features: {
@@ -103,7 +102,7 @@ export class Bitmusa extends BaseExchange {
                 },
                 private: {
                     get: {
-                        'api/v1/spot/market/exchange-info' : {versions: ['V0'], cost: null},
+                        'api/v1/spot/market/exchange-info': { versions: ['V0'], cost: null },
                         'api/v1/spot/wallet': { versions: ['V0'], cost: null },
                         'api/v1/spot/market': { versions: ['V0'], cost: null },
                         'api/v1/spot/market/orderbook': { versions: ['V0'], cost: null },
@@ -202,7 +201,7 @@ export class Bitmusa extends BaseExchange {
                     '1M': '1M',
                 }
             },
-            listenKeys : {
+            listenKeys: {
                 spot: undefined,
                 futures: undefined,
             },
@@ -226,7 +225,7 @@ export class Bitmusa extends BaseExchange {
             url += '?' + queryString;
             body = undefined;
         }
-        if (method === 'POST' && this.hasProp(body, ['orderId'])){
+        if (method === 'POST' && this.hasProp(body, ['orderId'])) {
             queryString = Object.entries(body)
                 .map(([key, val]) => `${encodeURIComponent(val)}`)
                 .join('/');
@@ -244,7 +243,7 @@ export class Bitmusa extends BaseExchange {
     handleErrors(statusCode, statusText, url, method, responseHeaders, responseBody, response, requestHeaders, requestBody) {
         if (statusCode === 200) {
             if (responseBody.code !== 0) {
-                throw new ExchangeError(this.exchange + ' ' + url + ' ' +  JSON.stringify(responseBody));
+                throw new ExchangeError(this.exchange + ' ' + url + ' ' + JSON.stringify(responseBody));
             }
         }
     }
@@ -306,27 +305,27 @@ export class Bitmusa extends BaseExchange {
         //         "enable": true
         //     },
         // ]
-        for(let i = 0; i < exchangeInfo.length; i++){
+        for (let i = 0; i < exchangeInfo.length; i++) {
             const item = exchangeInfo[i];
             const id = this.define(item, ['symbol', 'ticker']);
             const baseAsset = this.safeStringUpper(item, 'baseCoin');
             const quoteAsset = this.safeStringUpper(item, 'quoteCoin');
             const socketId = baseAsset + quoteAsset;
-            const assetType = this.hasProp(item, ['fee']) ? 'spot': 'futures';
+            const assetType = this.hasProp(item, ['fee']) ? 'spot' : 'futures';
             const pricePrecision = String(this.define(item, ['baseCoinScale', 'baseCoinPrecision']));
             const amountPrecision = this.safeString(item, 'quoteCoinPrecision');
             let minBaseLotSize = this.convertSciToNormal(this.safeString(item, 'minBaseCoinQty'));
             let maxBaseLotSize = this.convertSciToNormal(this.safeString(item, 'maxBaseCoinQty'));
-            if(!Precise.stringGt(maxBaseLotSize, '0')){
+            if (!Precise.stringGt(maxBaseLotSize, '0')) {
                 maxBaseLotSize = null;
             }
             let minQuoteLotSize = this.convertSciToNormal(this.safeString(item, 'minQuoteCoinQty'));
             let maxQuoteLotSize = this.safeString(item, 'maxQuoteCoinQty', null);
             const input = `${baseAsset}/${quoteAsset}`;
-            if(!this.markets[assetType]){
+            if (!this.markets[assetType]) {
                 this.markets[assetType] = {};
             }
-            if(!this.markets['parsed']) {
+            if (!this.markets['parsed']) {
                 this.markets['parsed'] = {};
             }
             if (!this.markets['parsed'][assetType]) {
@@ -355,10 +354,10 @@ export class Bitmusa extends BaseExchange {
         promisesAry.push(this.getApiV1SpotMarketExchangeInfo());
         promisesAry.push(this.getApiV2FutureMarketExchangeInfo());
         const promises = await Promise.all(promisesAry);
-        for(let i = 0; i < promises.length; i++){
+        for (let i = 0; i < promises.length; i++) {
             const response = promises[i];
             const data = this.handleResponse(response);
-            if(data){
+            if (data) {
                 this.parseMarkets(data);
             }
         }
@@ -442,7 +441,7 @@ export class Bitmusa extends BaseExchange {
         // },
         if (this.isObject(trades)) {
             let side = this.define(trades, ['direction', 'position']);
-            if (side ===0) side = 'BUY'
+            if (side === 0) side = 'BUY'
             else if (side === 1) side = 'SELL'
             return this.safeTrade({
                 price: this.define(trades, ['price']),
@@ -821,7 +820,7 @@ export class Bitmusa extends BaseExchange {
             let timestamp = this.define(trades, ['tradeTime']);
             let isMaker = this.define(trades, ['role']) === 'MAKER' ? true : false;
             let side = this.define(trades, ['direction']);
-            if(assetType=== 'futures'){ 
+            if (assetType === 'futures') {
                 symbol = this.define(trades, ['ticker']);
                 timestamp = new Date(this.define(trades, ['transaction_time'])).getTime();
                 isMaker = this.define(trades, ['role']) === 0 ? false : true;
@@ -888,12 +887,12 @@ export class Bitmusa extends BaseExchange {
             closePosition: closePosition,
         });
     }
-    parseCancelOrder(response){
-        if(this.isObject(response) && this.hasProp(response, ['orderId'])){
+    parseCancelOrder(response) {
+        if (this.isObject(response) && this.hasProp(response, ['orderId'])) {
             const orderId = this.safeString(response, 'orderId');
-            return { id: orderId, status: 'success'}
-        } else{
-            return { msg : 'cancel all success'}
+            return { id: orderId, status: 'success' }
+        } else {
+            return { msg: 'cancel all success' }
         }
     }
     parseOpenOrders(openOrders) {
@@ -996,7 +995,7 @@ export class Bitmusa extends BaseExchange {
             if (type === 0) type = 'MARKET';
             if (type === 1) type = 'LIMIT';
             const order = {};
-            this.extendWithObj(order , {
+            this.extendWithObj(order, {
                 id: orderId,
                 symbol: symbol,
                 price: price,
@@ -1219,12 +1218,12 @@ export class Bitmusa extends BaseExchange {
         const data = this.handleResponse(response);
         return this.parseOpenOrders(data.content);
     }
-    async cancelOrder(symbol, orderId){
+    async cancelOrder(symbol, orderId) {
         await this.loadMarkets();
         let method = 'postApiV1SpotOrderCancel';
         const parameters = {};
         this.extendWithObj(parameters, {
-            orderId : orderId
+            orderId: orderId
         })
         await this[method](parameters);
         const response = { orderId: orderId }
@@ -1345,12 +1344,12 @@ export class Bitmusa extends BaseExchange {
         const data = this.handleResponse(response);
         return this.parseOpenOrders(data);
     }
-    async futuresCancelOrder(symbol, orderId){
+    async futuresCancelOrder(symbol, orderId) {
         await this.loadMarkets();
         let method = 'postApiV2FutureOrderCancel';
         const parameters = {};
         this.extendWithObj(parameters, {
-            orderId : orderId
+            orderId: orderId
         })
         await this[method](parameters);
         const response = { orderId: orderId }
@@ -1546,10 +1545,10 @@ export class Bitmusa extends BaseExchange {
     handleSocketError(channel, error) {
         //console.log('socket error', channel);
     }
-    methodName (method){
+    methodName(method) {
         const subStringsToRemove = ['futures', 'delievery'];
         subStringsToRemove.forEach(subString => {
-            if(method.includes(subString)){
+            if (method.includes(subString)) {
                 method = method.replace(subString, '');
                 method = method.charAt(0).toLowerCase() + method.slice(1);
             }
@@ -1570,7 +1569,7 @@ export class Bitmusa extends BaseExchange {
         const handler = methods[methodName];
         return handler.call(this, data);
     }
-    
+
     handleStream(url, method, payload = {}) {
         const handleSocketOpen = this.handleSocketOpen.bind(this);
         const handleSocketClose = this.handleSocketClose.bind(this);
@@ -1627,16 +1626,16 @@ export class Bitmusa extends BaseExchange {
         const isPrivate = this.isValid(this.ws.private[method]) ? true : false;
 
         if (isPrivate) {
-            try {   
+            try {
                 let listenKey = undefined;
                 if (method.includes('futures')) {
-                    if(!this.has().listenKeys['futures']){
+                    if (!this.has().listenKeys['futures']) {
                         listenKey = await this.postFuturesListenKey();
-                    } else{
+                    } else {
                         listenKey = this.has().listenKeys['futures'];
                     }
                 } else {
-                    if (!this.has().listenKeys['spot']){
+                    if (!this.has().listenKeys['spot']) {
                         listenKey = await this.postListenKey();
                     } else {
                         listenKey = this.has().listenKeys['spot'];
@@ -1757,39 +1756,39 @@ export class Bitmusa extends BaseExchange {
         //     "eventTime": 1700703707123
         // }
         const stream = this.safeString(data, 'stream');
-        if(stream === 'spot_wallet'){
+        if (stream === 'spot_wallet') {
             const item = this.safeValue(data, 'data');
             const asset = this.safeStringUpper(item, 'asset');
             const available = this.safeString(item, 'free');
             const frozen = this.safeString(item, 'locked');
             const wallet = Precise.stringAdd(available, frozen);
             const response = {};
-            this.extendWithObj(response, { 
-                asset: asset,  
-                wallet: wallet , 
-                available: available, 
+            this.extendWithObj(response, {
+                asset: asset,
+                wallet: wallet,
+                available: available,
                 frozen: frozen
             });
             this.wallets['spot'][asset] = response;
             return response;
-        }else if(stream === 'future_wallet'){
+        } else if (stream === 'future_wallet') {
             const item = this.safeValue(data, 'data');
             const asset = this.safeStringUpper(item, 'asset');
             const available = this.safeString(item, 'free');
             const frozen = this.safeString(item, 'locked');
             const wallet = Precise.stringAdd(available, frozen);
             const response = {};
-            this.extendWithObj(response, { 
-                asset: asset, 
-                wallet: wallet, 
-                available: available, 
-                frozen: frozen 
+            this.extendWithObj(response, {
+                asset: asset,
+                wallet: wallet,
+                available: available,
+                frozen: frozen
             });
             this.wallets['futures'][asset] = response;
             return response;
         }
     }
-    handleOrderUpdateStream(data){
+    handleOrderUpdateStream(data) {
         // SPOT
         // {
         //     "data": {
@@ -1829,7 +1828,7 @@ export class Bitmusa extends BaseExchange {
         //     "eventTime": 1700703548846
         // }
         const stream = this.safeString(data, 'stream');
-        if(stream === 'spot_order'){
+        if (stream === 'spot_order') {
             const item = this.safeValue(data, 'data');
             const symbol = this.safeSymbols(this.safeString(item, 'symbol'), 'spot', false, true);
             const timestamp = this.safeTimestamp(data, 'createdTime');
@@ -1839,12 +1838,12 @@ export class Bitmusa extends BaseExchange {
             const executedQty = this.safeString(item, 'tradedAmount');
             const side = this.safeStringUpper(item, 'direction');
             let type = this.safeStringUpper(item, 'type');
-            if(type === 'LIMIT_PRICE') type = 'LIMIT';
-            if(type === 'MARKET_PRICE') type = 'MARKET';
+            if (type === 'LIMIT_PRICE') type = 'LIMIT';
+            if (type === 'MARKET_PRICE') type = 'MARKET';
             const tif = 'GTX' // Bitmusa does not support tif for spot orders
             let status = this.safeString(item, 'status');
-            if(status === 'COMPLETED') status = 'FILLED';
-            if(status === 'OVERTIMED') status = 'CANCELED';
+            if (status === 'COMPLETED') status = 'FILLED';
+            if (status === 'OVERTIMED') status = 'CANCELED';
             const response = {};
             this.extendWithObj(response, {
                 timestamp: timestamp,
@@ -1859,7 +1858,7 @@ export class Bitmusa extends BaseExchange {
                 side: side
             })
             return response;
-        }else if(stream === 'future_order'){
+        } else if (stream === 'future_order') {
             const item = this.safeValue(data, 'data');
             const symbol = this.safeSymbols(this.safeString(item, 'ticker'), 'futures', false, true);
             const timestamp = this.safeTimestamp(data, 'createdTime');
@@ -1869,21 +1868,21 @@ export class Bitmusa extends BaseExchange {
             const executedQty = this.safeString(item, 'tradedAmount');
             const side = this.safeStringUpper(item, 'direction');
             let type = this.safeStringUpper(item, 'type');
-            if(type === '0') type = 'MARKET';
-            if(type === '1') type = 'LIMIT';
-            if(type === '2') type = 'TAKE_PROFIT';
-            if(type === '3') type = 'STOP_LOSS';
-            if(type === '4') type = 'LIQUIDATION';
+            if (type === '0') type = 'MARKET';
+            if (type === '1') type = 'LIMIT';
+            if (type === '2') type = 'TAKE_PROFIT';
+            if (type === '3') type = 'STOP_LOSS';
+            if (type === '4') type = 'LIQUIDATION';
             let tif = this.safeStringUpper(item, 'tif');
-            if(tif=== '0') tif = 'GTC';
-            if(tif=== '1') tif = 'IOC';
-            if(tif=== '2') tif = 'FOK';
+            if (tif === '0') tif = 'GTC';
+            if (tif === '1') tif = 'IOC';
+            if (tif === '2') tif = 'FOK';
             const response = {};
             let status = this.safeString(item, 'status');
-            if(status === '1') status = 'FILLED';
-            if(status === '2') status = 'CANCELED';
+            if (status === '1') status = 'FILLED';
+            if (status === '2') status = 'CANCELED';
             if (status === '3') status = 'FILLED';
-            if(status === '4') status = 'TRADING';
+            if (status === '4') status = 'TRADING';
             this.extendWithObj(response, {
                 timestamp: timestamp,
                 id: id,
@@ -1899,7 +1898,7 @@ export class Bitmusa extends BaseExchange {
             return response;
         }
     }
-    handleExposureStream(data){
+    handleExposureStream(data) {
         // {
         //     "data": {
         //         "ticker" : "XRPUSDT",
@@ -1920,7 +1919,7 @@ export class Bitmusa extends BaseExchange {
         //     "eventTime": 1700703548846
         // }
         const stream = this.safeValue(data, 'data');
-        if(stream === 'future_position'){
+        if (stream === 'future_position') {
             const item = this.safeValue(data, 'data');
             const symbol = this.safeSymbols(this.safeString(data, 'ticker'), 'futures', false, true);
             const qty = this.safeString(item, 'amount');
@@ -1931,8 +1930,8 @@ export class Bitmusa extends BaseExchange {
             const marginType = this.safeStringLower(item, 'marginMode');
             const unRealizedPnL = this.safeString(item, 'unpnl');
             let side = this.safeStringUpper(item, 'position');
-            if(side=== 'BUY' || side === 'buy') side = 'LONG';
-            if(side=== 'SELL' || side === 'sell') side = 'SHORT';
+            if (side === 'BUY' || side === 'buy') side = 'LONG';
+            if (side === 'SELL' || side === 'sell') side = 'SHORT';
             const response = {};
             this.extendWithObj(response, {
                 symbol: symbol,
@@ -1955,7 +1954,7 @@ export class Bitmusa extends BaseExchange {
         const parsedTimeframe = this.safeTimeframe(interval, 'spot');
         const urls = this.urls['base']['ssV0'];
         const pathValue = `/public?stream=${parsedSymbol}@kline_${parsedTimeframe}`;
-        const url = await this.authenticate(method, urls+pathValue);
+        const url = await this.authenticate(method, urls + pathValue);
         return this.handleStream(url, method);
     }
     async orderBookStream(symbol) {
@@ -1964,7 +1963,7 @@ export class Bitmusa extends BaseExchange {
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false).replace('/', '');
         const urls = this.urls['base']['ssV0'];
         const pathValue = `/public?stream=${parsedSymbol}@depth${20}@100ms`;
-        const url = await this.authenticate(method, urls+pathValue);
+        const url = await this.authenticate(method, urls + pathValue);
         return this.handleStream(url, method);
     }
     async futuresCandleStream(symbol, interval) {
@@ -1974,7 +1973,7 @@ export class Bitmusa extends BaseExchange {
         const parsedTimeframe = this.safeTimeframe(interval, 'futures');
         const urls = this.urls['base']['sfV0'];
         const pathValue = `/public?stream=${parsedSymbol}@kline_${parsedTimeframe}`;
-        const url = await this.authenticate(method, urls+pathValue);
+        const url = await this.authenticate(method, urls + pathValue);
         return this.handleStream(url, method);
     }
     async futuresOrderBookStream(symbol) { // TODO Parse
@@ -1983,7 +1982,7 @@ export class Bitmusa extends BaseExchange {
         const parsedSymbol = this.safeSymbols(symbol, 'futures', false);
         const urls = this.urls['base']['sfV0'];
         const pathValue = `/public?stream=${parsedSymbol}@depth${20}@1ms`;
-        const url = await this.authenticate(method, urls+pathValue);
+        const url = await this.authenticate(method, urls + pathValue);
         return this.handleStream(url, method);
     }
     async balanceStream() {
@@ -1994,7 +1993,7 @@ export class Bitmusa extends BaseExchange {
         const url = await this.authenticate(method, urls);
         return this.handleStream(url, method);
     }
-    async futuresBalanceStream(){
+    async futuresBalanceStream() {
         await this.loadMarkets();
         await this.loadWallets('futures');
         let method = 'futuresBalance';
@@ -2002,21 +2001,21 @@ export class Bitmusa extends BaseExchange {
         const url = await this.authenticate(method, urls);
         return this.handleStream(url, method);
     }
-    async orderUpdateStream(){
+    async orderUpdateStream() {
         await this.loadMarkets();
         let method = 'orderUpdate';
         const urls = this.urls['base']['ssV0'];
         const url = await this.authenticate(method, urls);
         return this.handleStream(url, method);
     }
-    async futuresOrderUpdateStream(){
+    async futuresOrderUpdateStream() {
         await this.loadMarkets();
         let method = 'futuresOrderUpdate';
         const urls = this.urls['base']['sfV0'];
         const url = await this.authenticate(method, urls);
         return this.handleStream(url, method);
     }
-    async futuresExposureStream(){
+    async futuresExposureStream() {
         await this.loadMarkets();
         let method = 'futuresExposure';
         const urls = this.urls['base']['sfV0'];
@@ -2024,3 +2023,5 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
 }
+
+module.exports = Bitmusa;

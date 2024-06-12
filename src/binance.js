@@ -1,10 +1,10 @@
-import { BaseExchange } from './base/Exchange.js';
-import { Unavailable, EmptyParameters, InvalidOrder, DataLost, MalformedParameter, InvalidParameters } from './base/errors.js';
-import { hmacSha256 } from './base/functions/crypto.js';
-import { Precise } from './base/functions/Precise.js';
-import OrderBook from './base/orderBook.js';
+const { BaseExchange } = require('./base/Exchange.js');
+const { Unavailable, EmptyParameters, InvalidOrder, DataLost, MalformedParameter, InvalidParameters } = require('./base/errors.js');
+const { hmacSha256 } = require('./base/functions/crypto.js');
+const { Precise } = require('./base/functions/Precise.js');
+const OrderBook = require('./base/orderBook.js');
 
-export class Binance extends BaseExchange {
+class Binance extends BaseExchange {
     has() {
         return this.deepExtend(super.has(), {
             features: {
@@ -528,14 +528,14 @@ export class Binance extends BaseExchange {
             const minNotional = filter.find(f => this.safeString(f, 'filterType') === 'MIN_NOTIONAL')
             const pricePrecision = this.decimalPlaces(this.safeString(priceFilter, 'tickSize'));
             const amountPrecision = this.decimalPlaces(this.safeString(lotSize, 'stepSize'));
-            const minBaseLotSize = this.safeString(lotSize,  'minQty', null);
+            const minBaseLotSize = this.safeString(lotSize, 'minQty', null);
             const maxBaseLotSize = this.safeString(lotSize, 'maxQty', null);
             let minQuoteLotSize = undefined;
             let maxQuoteLotSize = undefined;
-            if(notional){ // SPOT
+            if (notional) { // SPOT
                 minQuoteLotSize = this.safeString(notional, 'minNotional', null);
                 maxQuoteLotSize = this.safeString(notional, 'maxNotional', null);
-            }else{
+            } else {
                 minQuoteLotSize = this.safeString(minNotional, 'notional', null);
                 maxQuoteLotSize = null // not available for futures
             }
@@ -544,7 +544,7 @@ export class Binance extends BaseExchange {
             if (!this.markets[assetType]) {
                 this.markets[assetType] = {};
             }
-            if(!this.markets['parsed']) {
+            if (!this.markets['parsed']) {
                 this.markets['parsed'] = {};
             }
             if (!this.markets['parsed'][assetType]) {
@@ -1989,8 +1989,8 @@ export class Binance extends BaseExchange {
         const response = await this[method]();
         return response.data;
     }
-    async postDeliveryListenKey() {}
-    async putDeliveryListenKey() {}
+    async postDeliveryListenKey() { }
+    async putDeliveryListenKey() { }
     async keepAlive(method, listenKey) {
         const maxRetries = this.safeInteger(this.options, 'maxRetries', 5);
         const retryInterval = this.safeInteger(this.options, 'retryInterval', 1000);
@@ -2771,3 +2771,5 @@ export class Binance extends BaseExchange {
         return this.handleStream(url, method);
     }
 }
+
+module.exports = Binance;

@@ -25,15 +25,15 @@ const convertSciToNormal = (num) => {
     const match = str.match(/^(\d+)(\.(\d+))?[eE]([-\+]?\d+)$/)
     if (!match) return str //number was not e notation or toString converted
     // we parse the e notation as (integer).(tail)e(exponent)
-    const [, integer,, tail, exponentStr ] = match
+    const [, integer, , tail, exponentStr] = match
     const exponent = Number(exponentStr)
     const realInteger = integer + (tail || '')
-    if(exponent > 0) {
+    if (exponent > 0) {
         const realExponent = Math.abs(exponent + integer.length)
         return realInteger.padEnd(realExponent, '0')
     } else {
         const realExponent = Math.abs(exponent - (tail?.length || 0))
-        return '0.'+ realInteger.padStart(realExponent, '0')
+        return '0.' + realInteger.padStart(realExponent, '0')
     }
 
 }
@@ -139,7 +139,7 @@ const sortBy = (array, key, descending = false, defaultValue = 0, direction = de
 });
 
 const toMilliseconds = x => x * 1000;
-const schedule= async (callback, args = [], interval = 1000)=> {
+const schedule = async (callback, args = [], interval = 1000) => {
     setTimeout(async () => {
         await callback(...args);
         schedule(callback, args, interval);
@@ -159,16 +159,16 @@ const parseToInt = (number) => {
 const decimalPlaces = num => {
     const match = ('' + num).match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
     if (!match) return 0;
-    return String(Math.max( 0,
+    return String(Math.max(0,
         // Number of digits right of decimal point.
         (match[1] ? match[1].length : 0) -
-            // Adjust for scientific notation.
-            (match[2] ? +match[2] : 0),
+        // Adjust for scientific notation.
+        (match[2] ? +match[2] : 0),
     ));
 };
 
 
-export {
+module.exports = {
     asFloat,
     asInteger,
     isStringCoercible,
