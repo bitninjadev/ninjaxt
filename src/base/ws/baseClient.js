@@ -131,4 +131,4 @@ class BaseClient extends EventEmitter {
     }
 }
 
-module.exports = BaseClient;
+module.exports = { BaseClient };
