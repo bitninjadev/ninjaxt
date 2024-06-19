@@ -1,8 +1,8 @@
-import { BaseExchange } from './base/Exchange.js';
-import { Rejected, Unavailable, EmptyParameters, InvalidOrder, DataLost, ExchangeError } from './base/errors.js';
-import { Precise } from './base/functions/Precise.js';
+const { BaseExchange } = require('./base/Exchange.js');
+const { Rejected, Unavailable, EmptyParameters, InvalidOrder, DataLost, ExchangeError } = require('./base/errors.js');
+const { Precise } = require('./base/functions/Precise.js');
 
-export class Bitmusa extends BaseExchange {
+class Bitmusa extends BaseExchange {
     has() {
         return this.deepExtend(super.has(), {
             features: {
@@ -2023,3 +2023,5 @@ export class Bitmusa extends BaseExchange {
         return this.handleStream(url, method);
     }
 }
+
+module.exports = Bitmusa;

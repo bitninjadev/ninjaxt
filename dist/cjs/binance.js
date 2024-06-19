@@ -1,10 +1,10 @@
-import { BaseExchange } from './base/Exchange.js';
-import { Unavailable, EmptyParameters, InvalidOrder, DataLost, MalformedParameter, InvalidParameters } from './base/errors.js';
-import { hmacSha256 } from './base/functions/crypto.js';
-import { Precise } from './base/functions/Precise.js';
-import OrderBook from './base/orderBook.js';
+const { BaseExchange } = require('./base/Exchange.js');
+const { Unavailable, EmptyParameters, InvalidOrder, DataLost, MalformedParameter, InvalidParameters } = require('./base/errors.js');
+const { hmacSha256 } = require('./base/functions/crypto.js');
+const { Precise } = require('./base/functions/Precise.js');
+const OrderBook = require('./base/orderBook.js');
 
-export class Binance extends BaseExchange {
+class Binance extends BaseExchange {
     has() {
         return this.deepExtend(super.has(), {
             features: {
@@ -2771,3 +2771,5 @@ export class Binance extends BaseExchange {
         return this.handleStream(url, method);
     }
 }
+
+module.exports = Binance;

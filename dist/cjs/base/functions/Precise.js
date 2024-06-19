@@ -408,5 +408,4 @@ class Precise {
     }
 }
 
-export default Precise;
-export { Precise };
+module.exports = { Precise }; 

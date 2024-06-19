@@ -1,10 +1,10 @@
-import { BaseExchange } from './base/Exchange.js';
-import { Unavailable, EmptyParameters, InvalidOrder, DataLost } from './base/errors.js';
-import { hmacSha512, sha512Hex } from './base/functions/crypto.js';
-import { Precise } from './base/functions/Precise.js';
-import OrderBook from './base/orderBook.js';
+const { BaseExchange } = require('./base/Exchange.js');
+const { Unavailable, EmptyParameters, InvalidOrder, DataLost } = require('./base/errors.js');
+const { hmacSha512, sha512Hex } = require('./base/functions/crypto.js');
+const { Precise } = require('./base/functions/Precise.js');
+const OrderBook = require('./base/orderBook.js');
 
-export class Gateio extends BaseExchange {
+class Gateio extends BaseExchange {
     has() {
         return this.deepExtend(super.has(), {
             features: {
@@ -1596,3 +1596,5 @@ export class Gateio extends BaseExchange {
         return this.handleStream(url, method, payload);
     }
 }
+
+module.exports = Gateio;

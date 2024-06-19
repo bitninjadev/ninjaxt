@@ -16,5 +16,4 @@ const isWebWorker = typeof WorkerGlobalScope !== 'undefined' && (self instanceof
 const isWindows = typeof process !== 'undefined' && process.platform === "win32";
 const isNode = !(isBrowser || isWebWorker);
 // ----------------------------------------------------------------------------
-export { isBrowser, isElectron, isWebWorker, isNode, isWindows };
-
+module.exports = { isBrowser, isElectron, isWebWorker, isNode, isWindows, };

@@ -168,7 +168,7 @@ const decimalPlaces = num => {
 };
 
 
-export {
+module.exports = {
     asFloat,
     asInteger,
     isStringCoercible,

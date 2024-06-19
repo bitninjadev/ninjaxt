@@ -1,11 +1,11 @@
-import WebSocket from 'ws';
-import { deepExtend, isEmpty } from '../functions/utils.js';
-import { isNode } from '../functions/platform.js';
-import { EventEmitter } from 'events';
+const WebSocket = require('ws');
+const { deepExtend, isEmpty } = require('../functions/utils.js');
+const { isNode } = require('../functions/platform.js');
+const { EventEmitter } = require('events');
 
 const WebSocketPlatform = isNode ? WebSocket : self.WebSocket;
 
-export class BaseClient extends EventEmitter {
+class BaseClient extends EventEmitter {
     constructor(options = {}, handleSocketOpen, handleSocketClose, handleSocketMessage, handleSocketError, method) {
         super();
         const defaults = {
@@ -130,3 +130,5 @@ export class BaseClient extends EventEmitter {
         }
     }
 }
+
+module.exports = { BaseClient };

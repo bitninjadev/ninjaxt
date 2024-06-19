@@ -1,11 +1,10 @@
-const Binance = require('./src/binance.js');
-const Bitmusa = require('./src/bitmusa.js');
-const Gateio = require('./src/gateio.js');
+import { Binance } from './src/binance.js';
+import { Bitmusa } from './src/bitmusa.js';
+import { Gateio } from './src/gateio.js';
 
 const Ninjaxt = {
     Binance,
     Bitmusa,
     Gateio,
-};
-
-module.exports = Ninjaxt;
+}
+export default Ninjaxt;

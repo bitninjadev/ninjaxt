@@ -1,9 +1,15 @@
 {
     "name": "ninjaxt",
-    "version": "0.1.6",
+    "version": "0.2.0",
     "description": "",
     "main": "Ninjaxt.js",
-    "type": "commonjs",
+    "type": "module",
+    "exports": {
+        ".": {
+            "import": "./Ninjaxt.js",
+            "require": "./dist/Ninjaxt.cjs"
+        }
+    },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
