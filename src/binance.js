@@ -516,6 +516,7 @@ export class Binance extends BaseExchange {
         const symbols = this.safeValue(exchangeInfo, 'symbols');
         for (let i = 0; i < symbols.length; i++) {
             const symbol = symbols[i];
+            if (symbol.symbol != symbol.pair) continue;
             const id = this.safeString(symbol, 'symbol');
             const socketId = id.toLowerCase();
             const assetType = this.hasProp(symbol, ['contractType']) ? 'futures' : 'spot';
@@ -525,19 +526,20 @@ export class Binance extends BaseExchange {
             const priceFilter = filter.find(f => this.safeString(f, 'filterType') === 'PRICE_FILTER');
             const lotSize = filter.find(f => this.safeString(f, 'filterType') === 'LOT_SIZE');
             const notional = filter.find(f => this.safeString(f, 'filterType') === 'NOTIONAL');
-            const minNotional = filter.find(f => this.safeString(f, 'filterType') === 'MIN_NOTIONAL')
+            const minNotional = filter.find(f => this.safeString(f, 'filterType') === 'MIN_NOTIONAL');
             const pricePrecision = this.decimalPlaces(this.safeString(priceFilter, 'tickSize'));
             const amountPrecision = this.decimalPlaces(this.safeString(lotSize, 'stepSize'));
             const minBaseLotSize = this.safeString(lotSize, 'minQty', null);
             const maxBaseLotSize = this.safeString(lotSize, 'maxQty', null);
             let minQuoteLotSize = undefined;
             let maxQuoteLotSize = undefined;
-            if (notional) { // SPOT
+            if (notional) {
+                // SPOT
                 minQuoteLotSize = this.safeString(notional, 'minNotional', null);
                 maxQuoteLotSize = this.safeString(notional, 'maxNotional', null);
             } else {
                 minQuoteLotSize = this.safeString(minNotional, 'notional', null);
-                maxQuoteLotSize = null // not available for futures
+                maxQuoteLotSize = null; // not available for futures
             }
             const input = `${baseAsset}/${quoteAsset}`;
             // Initialize instruments
@@ -562,7 +564,7 @@ export class Binance extends BaseExchange {
                 maxBaseLotSize: maxBaseLotSize,
                 minQuoteLotSize: minQuoteLotSize,
                 maxQuoteLotSize: maxQuoteLotSize,
-            }
+            };
             this.markets[assetType][input] = obj;
             this.markets['parsed'][assetType][id] = obj;
         }
@@ -1989,8 +1991,8 @@ export class Binance extends BaseExchange {
         const response = await this[method]();
         return response.data;
     }
-    async postDeliveryListenKey() { }
-    async putDeliveryListenKey() { }
+    async postDeliveryListenKey() {}
+    async putDeliveryListenKey() {}
     async keepAlive(method, listenKey) {
         const maxRetries = this.safeInteger(this.options, 'maxRetries', 5);
         const retryInterval = this.safeInteger(this.options, 'retryInterval', 1000);
